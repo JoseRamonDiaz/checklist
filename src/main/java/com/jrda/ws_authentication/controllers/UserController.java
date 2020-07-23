@@ -2,6 +2,8 @@ package com.jrda.ws_authentication.controllers;
 
 import com.jrda.ws_authentication.dao.sql.AppUser;
 import com.jrda.ws_authentication.dao.sql.UserRepository;
+import com.jrda.ws_authentication.dao.sql.UsersDocuments;
+import com.jrda.ws_authentication.dao.sql.UsersDocumentsRepository;
 import com.jrda.ws_authentication.dto.User;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,10 +13,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
@@ -23,9 +22,11 @@ import java.util.stream.Collectors;
 @RestController
 public class UserController {
     private final UserRepository userRepository;
+    private final UsersDocumentsRepository usersDocumentsRepository;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, UsersDocumentsRepository usersDocumentsRepository) {
         this.userRepository = userRepository;
+        this.usersDocumentsRepository = usersDocumentsRepository;
     }
 
     //requestparam
@@ -40,22 +41,38 @@ public class UserController {
         }
     }
 
-    private boolean authenticateUser(User user) {
-        List<AppUser> byName = userRepository.findByName(user.getUser());
-        AppUser appUser = byName.get(0);
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-        return appUser != null && passwordEncoder.matches(user.getPwd(), appUser.getPass());
-    }
-
-    @PostMapping(path = "user/create", consumes = "application/json")
+    @PostMapping(path = "user", consumes = "application/json")
     public @ResponseBody
-    ResponseEntity<String> createUser(@RequestBody User user) {
+    ResponseEntity<String> createUser(@RequestBody AppUser user) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        AppUser appUser = new AppUser(user.getUser(), passwordEncoder.encode(user.getPwd()));
-        AppUser createdUser = userRepository.save(appUser);
-        return new ResponseEntity<>("User " + createdUser.getName() + " successfully created!", HttpStatus.OK);
+        user.setPass(passwordEncoder.encode(user.getPass()));
+        userRepository.save(user);
+        return new ResponseEntity<>("User " + user.getName() + " successfully created!", HttpStatus.OK);
     }
+
+    @PutMapping(path = "user/{id}", consumes = "application/json")
+    public @ResponseBody
+    ResponseEntity<String> replaceUser(@RequestBody AppUser newUser, @PathVariable long id) {
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        AppUser savedUser = userRepository.findById(id).map(u -> {
+            u.setName(newUser.getName());
+            return userRepository.save(u);
+        })
+                .orElseGet(() -> {
+                    newUser.setId(id);
+                    newUser.setPass(passwordEncoder.encode(newUser.getPass()));
+                    return userRepository.save(newUser);
+                });
+        return new ResponseEntity<>("User " + savedUser.getName() + " successfully created!", HttpStatus.OK);
+    }
+
+    @PostMapping(path = "user/{id}/add", consumes = "application/json")
+
+    public void addAccess(@PathVariable Long id, @RequestBody UsersDocuments usersDocuments) {
+        usersDocuments.setUserId(id);
+        usersDocumentsRepository.save(usersDocuments);
+    }
+
 
     private String getJWTToken(String username) {
         String secretKey = "mySecretKey";
@@ -76,6 +93,14 @@ public class UserController {
                         secretKey.getBytes()).compact();
 
         return "Bearer " + token;
+    }
+
+    private boolean authenticateUser(User user) {
+        List<AppUser> byName = userRepository.findByName(user.getUser());
+        AppUser appUser = byName.get(0);
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+        return appUser != null && passwordEncoder.matches(user.getPwd(), appUser.getPass());
     }
 
 }

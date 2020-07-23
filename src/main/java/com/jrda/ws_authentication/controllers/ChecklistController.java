@@ -24,7 +24,6 @@ public class ChecklistController {
         String user = SecurityContextHolder.getContext().getAuthentication().getName();
 
         Checklist checklist = new Checklist();
-//        checklist.setId(UUID.randomUUID().toString());
         checklist.setName(name);
 
         System.out.println("Checklist " + name + " created for user " + user + "!");
