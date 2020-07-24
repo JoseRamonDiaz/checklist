@@ -13,12 +13,14 @@ public class AppUser {
 
     private String name;
     private String pass;
+    private String email;
 
     public AppUser(){}
 
-    public AppUser(String name, String pass) {
+    public AppUser(String name, String pass, String email) {
         this.name = name;
         this.pass = pass;
+        this.email = email;
     }
 
     public Long getId() {
@@ -43,5 +45,13 @@ public class AppUser {
 
     public void setPass(String pass) {
         this.pass = pass;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

@@ -1,10 +1,6 @@
 package com.jrda.ws_authentication.controllers;
 
-import com.jrda.ws_authentication.dao.sql.AppUser;
-import com.jrda.ws_authentication.dao.sql.UserRepository;
-import com.jrda.ws_authentication.dao.sql.UsersDocuments;
-import com.jrda.ws_authentication.dao.sql.UsersDocumentsRepository;
-import com.jrda.ws_authentication.dto.User;
+import com.jrda.ws_authentication.dao.sql.*;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.http.HttpStatus;
@@ -17,10 +13,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController
 public class UserController {
+    public final Pattern VALID_EMAIL_ADDRESS_REGEX =
+            Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
     private final UserRepository userRepository;
     private final UsersDocumentsRepository usersDocumentsRepository;
 
@@ -29,12 +29,12 @@ public class UserController {
         this.usersDocumentsRepository = usersDocumentsRepository;
     }
 
-    //requestparam
+    //RequestParam
     @PostMapping("user/login")
     public @ResponseBody
-    ResponseEntity<String> login(@RequestBody User user) {
-        if (authenticateUser(user)) {
-            String token = getJWTToken(user.getUser());
+    ResponseEntity<String> login(@RequestBody AppUser user) {
+        if (authenticateUser(user) != -1) {
+            String token = getJWTToken(user.getName(), user.getId());
             return new ResponseEntity<>(token, HttpStatus.OK);
         } else {
             return new ResponseEntity<>("Wrong user or password!", HttpStatus.UNAUTHORIZED);
@@ -44,6 +44,14 @@ public class UserController {
     @PostMapping(path = "user", consumes = "application/json")
     public @ResponseBody
     ResponseEntity<String> createUser(@RequestBody AppUser user) {
+        try {
+            validateEmailFormat(user.getEmail());
+            validateEmailIsNotUsed(user.getEmail());
+            validateNameIsNotUsed(user.getName());
+        } catch (AppUserException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         user.setPass(passwordEncoder.encode(user.getPass()));
         userRepository.save(user);
@@ -53,35 +61,53 @@ public class UserController {
     @PutMapping(path = "user/{id}", consumes = "application/json")
     public @ResponseBody
     ResponseEntity<String> replaceUser(@RequestBody AppUser newUser, @PathVariable long id) {
+        try {
+            validateEmailFormat(newUser.getEmail());
+            validateEmailIsNotUsed(newUser.getEmail());
+            validateNameIsNotUsed(newUser.getName());
+        } catch (AppUserException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         AppUser savedUser = userRepository.findById(id).map(u -> {
             u.setName(newUser.getName());
+            u.setEmail(newUser.getEmail());
             return userRepository.save(u);
-        })
-                .orElseGet(() -> {
-                    newUser.setId(id);
-                    newUser.setPass(passwordEncoder.encode(newUser.getPass()));
-                    return userRepository.save(newUser);
-                });
-        return new ResponseEntity<>("User " + savedUser.getName() + " successfully created!", HttpStatus.OK);
+        }).orElseGet(() -> {
+            newUser.setId(id);
+            newUser.setPass(passwordEncoder.encode(newUser.getPass()));
+            return userRepository.save(newUser);
+        });
+        return new ResponseEntity<>("User " + savedUser.getName() + " successfully updated!", HttpStatus.OK);
     }
 
     @PostMapping(path = "user/{id}/add", consumes = "application/json")
-
     public void addAccess(@PathVariable Long id, @RequestBody UsersDocuments usersDocuments) {
         usersDocuments.setUserId(id);
         usersDocumentsRepository.save(usersDocuments);
     }
 
+    @PutMapping(path = "user/{uid}/{did}")
+    public void replacePermissions(@PathVariable long uid, @PathVariable String did, @RequestBody UsersDocuments newUsersDocuments) {
+        usersDocumentsRepository.findById(new UsrDocsId(uid, did)).map(ud -> {
+            ud.setPermissions(newUsersDocuments.getPermissions());
+            return usersDocumentsRepository.save(ud);
+        }).orElseGet(() -> {
+            newUsersDocuments.setUserId(uid);
+            newUsersDocuments.setDocumentId(did);
+            return usersDocumentsRepository.save(newUsersDocuments);
+        });
+    }
 
-    private String getJWTToken(String username) {
+    private String getJWTToken(String username, long id) {
         String secretKey = "mySecretKey";
         List<GrantedAuthority> grantedAuthorities = AuthorityUtils
                 .commaSeparatedStringToAuthorityList("ROLE_USER");
 
         String token = Jwts
                 .builder()
-                .setId("softtekJWT")
+                .setId(id + "")
                 .setSubject(username)
                 .claim("authorities",
                         grantedAuthorities.stream()
@@ -95,12 +121,35 @@ public class UserController {
         return "Bearer " + token;
     }
 
-    private boolean authenticateUser(User user) {
-        List<AppUser> byName = userRepository.findByName(user.getUser());
+    private long authenticateUser(AppUser user) {
+        List<AppUser> byName = userRepository.findByName(user.getName());
         AppUser appUser = byName.get(0);
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-        return appUser != null && passwordEncoder.matches(user.getPwd(), appUser.getPass());
+        if (appUser != null && passwordEncoder.matches(user.getPass(), appUser.getPass())) {
+            return appUser.getId();
+        } else {
+            return -1;
+        }
+    }
+
+    private void validateNameIsNotUsed(String name) throws AppUserException {
+        if (!userRepository.findByName(name).isEmpty()) {
+            throw new AppUserException("Name is already taken");
+        }
+    }
+
+    private void validateEmailIsNotUsed(String email) throws AppUserException {
+        if (!userRepository.findByEmail(email).isEmpty()) {
+            throw new AppUserException("Email is already taken");
+        }
+    }
+
+    private void validateEmailFormat(String email) throws AppUserException {
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
+        if (!matcher.find()) {
+            throw new AppUserException("Invalid email");
+        }
     }
 
 }
