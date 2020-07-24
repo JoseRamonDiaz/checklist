@@ -7,10 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -33,8 +35,9 @@ public class UserController {
     @PostMapping("user/login")
     public @ResponseBody
     ResponseEntity<String> login(@RequestBody AppUser user) {
-        if (authenticateUser(user) != -1) {
-            String token = getJWTToken(user.getName(), user.getId());
+        long id = authenticateUser(user);
+        if (id != -1) {
+            String token = getJWTToken(user.getName(), id);
             return new ResponseEntity<>(token, HttpStatus.OK);
         } else {
             return new ResponseEntity<>("Wrong user or password!", HttpStatus.UNAUTHORIZED);
@@ -62,6 +65,7 @@ public class UserController {
     public @ResponseBody
     ResponseEntity<String> replaceUser(@RequestBody AppUser newUser, @PathVariable long id) {
         try {
+            validateUserId(id);
             validateEmailFormat(newUser.getEmail());
             validateEmailIsNotUsed(newUser.getEmail());
             validateNameIsNotUsed(newUser.getName());
@@ -103,7 +107,7 @@ public class UserController {
     private String getJWTToken(String username, long id) {
         String secretKey = "mySecretKey";
         List<GrantedAuthority> grantedAuthorities = AuthorityUtils
-                .commaSeparatedStringToAuthorityList("ROLE_USER");
+                .commaSeparatedStringToAuthorityList("USER," + id);
 
         String token = Jwts
                 .builder()
@@ -123,6 +127,11 @@ public class UserController {
 
     private long authenticateUser(AppUser user) {
         List<AppUser> byName = userRepository.findByName(user.getName());
+
+        if (byName.isEmpty()) {
+            return -1;
+        }
+
         AppUser appUser = byName.get(0);
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -149,6 +158,13 @@ public class UserController {
         Matcher matcher = VALID_EMAIL_ADDRESS_REGEX.matcher(email);
         if (!matcher.find()) {
             throw new AppUserException("Invalid email");
+        }
+    }
+
+    private void validateUserId(long id) throws AppUserException {
+        Collection<? extends GrantedAuthority> authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        if (authorities.stream().noneMatch(a -> a.getAuthority().equals(id + ""))) {
+            throw new AppUserException("No permissions to modify this user");
         }
     }
 
