@@ -28,7 +28,7 @@ public class ChecklistController {
         this.usersDocumentsRepository = usersDocumentsRepository;
     }
 
-    @PostMapping(path = "create", consumes = "application/json", produces = "application/json")
+    @PostMapping(path = "api/checklists", consumes = "application/json", produces = "application/json")
     public Checklist createChecklist(@RequestBody String name) {
         String user = SecurityContextHolder.getContext().getAuthentication().getName();
 
@@ -42,7 +42,7 @@ public class ChecklistController {
         return checklist;
     }
 
-    @PatchMapping(path = "update", consumes = "application/json", produces = "application/json")
+    @PatchMapping(path = "api/checklists", consumes = "application/json", produces = "application/json")
     public Response updateChecklist(@RequestBody Checklist checklist) {
         if (hasWritePermissions(checklist.getId())) {
             System.out.println("Updating " + checklist.getName() + " by " + SecurityContextHolder.getContext().getAuthentication().getName());
@@ -53,7 +53,7 @@ public class ChecklistController {
         }
     }
 
-    @DeleteMapping(path = "delete/{id}", produces = "application/json")
+    @DeleteMapping(path = "api/checklists/{id}", produces = "application/json")
     public Response deleteChecklist(@PathVariable String id) {
         if (hasWritePermissions(id)) {
             checklistRepository.deleteById(id);
@@ -62,7 +62,7 @@ public class ChecklistController {
         return Response.status(Response.Status.UNAUTHORIZED).entity("No write permissions on checklist " + id + "!").build();
     }
 
-    @GetMapping(path = "get/{id}")
+    @GetMapping(path = "api/checklists/{id}")
     public @ResponseBody
     Response getById(@PathVariable String id) {
         if (hasReadPermissions(id)) {
@@ -77,7 +77,7 @@ public class ChecklistController {
         return Response.status(Response.Status.UNAUTHORIZED).entity("No read permissions on checklist " + id + "!").build();
     }
 
-    @GetMapping(path = "getAll")
+    @GetMapping(path = "api/checklists")
     public ResponseEntity<List<Checklist>> getAll() {
         List<String> ids = getChecklistIdsWithReadPermissions();
         List<Checklist> checklistList = (List<Checklist>) checklistRepository.findAllById(ids);

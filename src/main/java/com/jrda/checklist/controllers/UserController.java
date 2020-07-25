@@ -32,7 +32,7 @@ public class UserController {
     }
 
     //RequestParam
-    @PostMapping("user/login")
+    @PostMapping("api/login")
     public @ResponseBody
     ResponseEntity<String> login(@RequestBody AppUser user) {
         long id = authenticateUser(user);
@@ -44,7 +44,7 @@ public class UserController {
         }
     }
 
-    @PostMapping(path = "user", consumes = "application/json")
+    @PostMapping(path = "api/users", consumes = "application/json")
     public @ResponseBody
     ResponseEntity<String> createUser(@RequestBody AppUser user) {
         try {
@@ -61,11 +61,11 @@ public class UserController {
         return new ResponseEntity<>("User " + user.getName() + " successfully created!", HttpStatus.OK);
     }
 
-    @PutMapping(path = "user/{id}", consumes = "application/json")
+    @PutMapping(path = "api/users", consumes = "application/json")
     public @ResponseBody
-    ResponseEntity<String> replaceUser(@RequestBody AppUser newUser, @PathVariable long id) {
+    ResponseEntity<String> replaceUser(@RequestBody AppUser newUser) {
         try {
-            validateUserId(id);
+            validateUserId(newUser.getId());
             validateEmailFormat(newUser.getEmail());
             validateEmailIsNotUsed(newUser.getEmail());
             validateNameIsNotUsed(newUser.getName());
@@ -74,25 +74,25 @@ public class UserController {
         }
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        AppUser savedUser = userRepository.findById(id).map(u -> {
+        AppUser savedUser = userRepository.findById(newUser.getId()).map(u -> {
             u.setName(newUser.getName());
             u.setEmail(newUser.getEmail());
             return userRepository.save(u);
         }).orElseGet(() -> {
-            newUser.setId(id);
+            newUser.setId(newUser.getId());
             newUser.setPass(passwordEncoder.encode(newUser.getPass()));
             return userRepository.save(newUser);
         });
         return new ResponseEntity<>("User " + savedUser.getName() + " successfully updated!", HttpStatus.OK);
     }
 
-    @PostMapping(path = "user/{id}/add", consumes = "application/json")
+    @PostMapping(path = "api/users/{id}/checklists", consumes = "application/json")
     public void addAccess(@PathVariable Long id, @RequestBody UsersDocuments usersDocuments) {
         usersDocuments.setUserId(id);
         usersDocumentsRepository.save(usersDocuments);
     }
 
-    @PutMapping(path = "user/{uid}/{did}")
+    @PutMapping(path = "api/users/{uid}/{did}")
     public void replacePermissions(@PathVariable long uid, @PathVariable String did, @RequestBody UsersDocuments newUsersDocuments) {
         usersDocumentsRepository.findById(new UsrDocsId(uid, did)).map(ud -> {
             ud.setPermissions(newUsersDocuments.getPermissions());
