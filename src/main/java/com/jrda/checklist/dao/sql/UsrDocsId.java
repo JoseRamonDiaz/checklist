@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.dao.sql;
+package com.jrda.checklist.dao.sql;
 
 import java.io.Serializable;
 

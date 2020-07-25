@@ -1,6 +1,6 @@
-package com.jrda.ws_authentication.controllers;
+package com.jrda.checklist.controllers;
 
-import com.jrda.ws_authentication.dao.sql.*;
+import com.jrda.checklist.dao.sql.*;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.http.HttpStatus;

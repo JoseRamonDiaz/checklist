@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.dao.document;
+package com.jrda.checklist.dao.document;
 
 public class Check {
     private boolean checked;

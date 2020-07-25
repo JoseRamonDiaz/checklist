@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.dao.document;
+package com.jrda.checklist.dao.document;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 

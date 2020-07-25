@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.filters;
+package com.jrda.checklist.filters;
 
 import io.jsonwebtoken.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -1,10 +1,10 @@
-package com.jrda.ws_authentication.controllers;
+package com.jrda.checklist.controllers;
 
-import com.jrda.ws_authentication.dao.document.Checklist;
-import com.jrda.ws_authentication.dao.document.ChecklistRepository;
-import com.jrda.ws_authentication.dao.sql.UsersDocuments;
-import com.jrda.ws_authentication.dao.sql.UsersDocumentsRepository;
-import com.jrda.ws_authentication.dao.sql.UsrDocsId;
+import com.jrda.checklist.dao.document.Checklist;
+import com.jrda.checklist.dao.document.ChecklistRepository;
+import com.jrda.checklist.dao.sql.UsersDocuments;
+import com.jrda.checklist.dao.sql.UsersDocumentsRepository;
+import com.jrda.checklist.dao.sql.UsrDocsId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
@@ -79,12 +79,12 @@ public class ChecklistController {
 
     @GetMapping(path = "getAll")
     public ResponseEntity<List<Checklist>> getAll() {
-        List<String> ids = getChecklistIdsWithPermissions();
+        List<String> ids = getChecklistIdsWithReadPermissions();
         List<Checklist> checklistList = (List<Checklist>) checklistRepository.findAllById(ids);
         return new ResponseEntity<>(checklistList, HttpStatus.OK);
     }
 
-    private List<String> getChecklistIdsWithPermissions() {
+    private List<String> getChecklistIdsWithReadPermissions() {
         return usersDocumentsRepository.findByUserId(getUserId()).stream().map(ud -> {
             if (ud.getPermissions()[0] == 'r') {
                 return ud.getDocumentId();

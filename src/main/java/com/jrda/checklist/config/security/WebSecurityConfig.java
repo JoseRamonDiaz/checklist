@@ -1,6 +1,6 @@
-package com.jrda.ws_authentication.config.security;
+package com.jrda.checklist.config.security;
 
-import com.jrda.ws_authentication.filters.JWTAuthorizationFilter;
+import com.jrda.checklist.filters.JWTAuthorizationFilter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

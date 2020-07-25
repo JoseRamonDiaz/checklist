@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication;
+package com.jrda.checklist;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

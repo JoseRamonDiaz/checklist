@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.dto;
+package com.jrda.checklist.dto;
 
 public class User {
     private String user;

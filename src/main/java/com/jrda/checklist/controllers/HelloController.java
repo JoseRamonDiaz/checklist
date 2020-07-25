@@ -1,4 +1,4 @@
-package com.jrda.ws_authentication.controllers;
+package com.jrda.checklist.controllers;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
