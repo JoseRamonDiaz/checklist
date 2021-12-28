@@ -1,12 +1,13 @@
 package com.jrda.checklist.config.security;
 
-import com.jrda.checklist.filters.JWTAuthorizationFilter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.jrda.checklist.filters.JWTAuthorizationFilter;
 
 @EnableWebSecurity
 @Configuration
@@ -16,7 +17,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.csrf().disable()
                 .addFilterAfter(new JWTAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers(HttpMethod.POST, "/api/login", "api/users").permitAll()
+                .antMatchers(HttpMethod.POST, "/api/login", "/api/users").permitAll()
                 .anyRequest().authenticated();
     }
 }
