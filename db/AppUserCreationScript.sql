@@ -1,3 +1,18 @@
+-- SEQUENCE: public.hibernate_sequence
+
+-- DROP SEQUENCE public.hibernate_sequence;
+
+CREATE SEQUENCE public.hibernate_sequence
+    INCREMENT 1
+    START 1
+    MINVALUE 0
+    MAXVALUE 9223372036854775807
+    CACHE 1;
+
+ALTER SEQUENCE public.hibernate_sequence
+    OWNER TO postgres;
+
+
 CREATE SEQUENCE public.app_user_id_seq
     INCREMENT 1
     START 1
